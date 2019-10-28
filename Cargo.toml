@@ -1,0 +1,17 @@
+[package]
+name = "system76_firmware_smmstore"
+version = "1.0.0"
+edition = "2018"
+
+[lib]
+name = "system76_firmware_smmstore"
+path = "src/lib.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+redox_uefi = "0.1.0"
+redox_uefi_std = "0.1.0"
+
+[package.metadata.cargo-xbuild]
+memcpy = true
+sysroot_path = "build/xbuild"

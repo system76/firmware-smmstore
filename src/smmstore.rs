@@ -112,7 +112,7 @@ pub fn smmstore() -> Result<()> {
 
     let rewrite = {
         i >= data.len() / 2 ||
-        duplicates >= 4
+        duplicates >= 16
     };
 
     if rewrite {

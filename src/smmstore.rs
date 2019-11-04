@@ -1,5 +1,7 @@
+extern crate alloc;
+
+use alloc::collections::BTreeMap;
 use std::{mem, slice};
-use std::collections::BTreeMap;
 use uefi::guid::Guid;
 use uefi::status::{Error, Result};
 
@@ -119,7 +121,7 @@ pub fn smmstore() -> Result<()> {
         let res = unsafe { smmstore_clear() };
         // println!("Clear {:?}", res);
         res?;
-    
+
         for (key, value) in compact.iter() {
             if key.len() > mem::size_of::<Guid>() && value.len() > 0 {
                 let res = unsafe { smmstore_append(&key, &value) };

@@ -19,7 +19,6 @@ mod smmstore;
 #[no_mangle]
 pub extern "C" fn main() -> Status {
     if let Err(err) = smmstore::smmstore() {
-        println!("SmmStore error: {:?}", err);
         Status::from_error(err)
     } else {
         Status(0)

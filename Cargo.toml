@@ -11,7 +11,4 @@ crate-type = ["staticlib"]
 [dependencies]
 redox_uefi = "0.1.0"
 redox_uefi_std = "0.1.0"
-
-[package.metadata.cargo-xbuild]
-memcpy = true
-sysroot_path = "build/xbuild"
+rlibc = "1.0"

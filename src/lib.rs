@@ -4,6 +4,7 @@
 #![feature(try_trait)]
 #![allow(non_snake_case)]
 
+extern crate rlibc;
 #[macro_use]
 extern crate uefi_std as std;
 

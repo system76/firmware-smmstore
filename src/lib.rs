@@ -1,5 +1,5 @@
 #![no_std]
-#![feature(asm)]
+#![feature(llvm_asm)]
 #![feature(prelude_import)]
 #![feature(try_trait)]
 #![allow(non_snake_case)]

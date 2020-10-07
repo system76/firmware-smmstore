@@ -7,7 +7,7 @@ use uefi::status::{Error, Result};
 
 unsafe fn smm_cmd(cmd: u8, subcmd: u8, arg: u32) -> u32 {
     let res;
-    asm!(
+    llvm_asm!(
         "out 0xB2, $0"
         : "={eax}"(res)
         : "{eax}"(((subcmd as u32) << 8) | (cmd as u32)), "{ebx}"(arg)

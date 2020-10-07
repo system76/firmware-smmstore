@@ -13,5 +13,5 @@ lto = true
 
 [dependencies]
 redox_uefi = "0.1.0"
-redox_uefi_std = "0.1.0"
+redox_uefi_std = "0.1.3"
 rlibc = "1.0"

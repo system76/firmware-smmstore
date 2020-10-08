@@ -1,4 +1,5 @@
 #![no_std]
+#![no_main]
 #![feature(llvm_asm)]
 #![feature(prelude_import)]
 #![feature(try_trait)]

@@ -6,4 +6,4 @@
   VERSION_STRING                 = 1.0
 
 [Binaries.X64]
-  PE32|build/x86_64-efi-pe/boot.efi|*
+  PE32|build/x86_64-unknown-uefi-drv/boot.efi|*

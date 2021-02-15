@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+#![no_std]
+#![feature(llvm_asm)]
+
 extern crate alloc;
+extern crate rlibc;
+extern crate uefi_std as std;
 
 use alloc::collections::BTreeMap;
 use std::{mem, slice};

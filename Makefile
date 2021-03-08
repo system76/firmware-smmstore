@@ -50,3 +50,7 @@ $(BUILD)/boot.efi: Cargo.lock Cargo.toml res/* src/*
 		-- \
 		-C soft-float \
 		--emit link=$@
+
+.PHONY: test
+test:
+	cargo test --no-default-features

@@ -18,6 +18,20 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
 
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up toolchain
+      run: rustup show
+
+    - name: Run tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --no-default-features
+
   build:
     runs-on: ubuntu-20.04
     steps:

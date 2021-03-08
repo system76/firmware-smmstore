@@ -14,7 +14,6 @@ jobs:
       run: |
         sudo apt install --yes make mtools parted
         rustup show
-        rustup component add rust-src
 
     - name: Build UEFI application
       run: make

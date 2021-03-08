@@ -7,6 +7,11 @@ license = "GPL-3.0-only"
 [profile.release]
 lto = true
 
+[[bin]]
+name = "system76_firmware_smmstore"
+test = false
+bench = false
+
 [dependencies]
 redox_uefi = "0.1.1"
 redox_uefi_std = { version = "0.1.4", optional = true }

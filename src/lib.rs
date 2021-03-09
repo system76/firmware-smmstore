@@ -10,7 +10,7 @@ extern crate rlibc;
 
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-use core::{mem, slice};
+use core::mem;
 use uefi::guid::Guid;
 use uefi::status::{Error, Result};
 
@@ -75,35 +75,77 @@ pub unsafe fn smmstore_append(key: &[u8], val: &[u8]) -> Result<()> {
     smmstore_cmd(SMMSTORE_APPEND, &params as *const Params as u32)
 }
 
+
+struct Entry {
+    key: Vec<u8>,
+    value: Vec<u8>,
+}
+
+struct Smmstore {
+    data: Vec<u8>,
+    offset: usize,
+}
+
+impl Smmstore {
+    pub fn from_raw(data: &[u8]) -> Self {
+        Self {
+            data: data.to_vec(),
+            offset: 0,
+        }
+    }
+}
+
+impl Iterator for Smmstore {
+    type Item = Result<Entry>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.offset + 8 <= self.data.len() {
+            let (keysz, valsz) = unsafe {
+                let ptr = self.data.as_ptr().add(self.offset) as *const u32;
+                self.offset += 8;
+                (*ptr as usize, *ptr.add(1) as usize)
+            };
+
+            // No more entries
+            if keysz == 0 || keysz == 0xffff_ffff {
+                return None;
+            }
+
+            // Data too short
+            if self.offset + keysz + valsz >= self.data.len() {
+                return Some(Err(Error::DeviceError));
+            }
+
+            let key = self.data[self.offset..self.offset + keysz].to_vec();
+            self.offset += keysz;
+
+            let value = self.data[self.offset..self.offset + valsz].to_vec();
+            self.offset += valsz;
+
+            // Check for null byte
+            if self.data[self.offset] != 0 {
+                return Some(Err(Error::DeviceError));
+            }
+            self.offset += 1;
+
+            // Align to 4 bytes
+            self.offset = (self.offset + 3) & !3;
+
+            Some(Ok(Entry { key, value }))
+        } else {
+            None
+        }
+    }
+}
+
+
 /// Check if raw region data is corrupted.
 pub fn is_corrupted(data: &[u8]) -> bool {
-    let mut i = 0;
-    while i + 8 <= data.len() {
-        let (keysz, valsz) = unsafe {
-            let ptr = data.as_ptr().add(i) as *const u32;
-            i += 8;
-            (*ptr as usize, *ptr.add(1) as usize)
-        };
-
-        // No more entries
-        if keysz == 0 || keysz == 0xffff_ffff {
-            break;
-        }
-
-        // Data too short
-        if i + keysz + valsz >= data.len() {
+    let smmstore = Smmstore::from_raw(&data);
+    for entry in smmstore {
+        if let Err(_err) = entry {
             return true;
         }
-
-        // Check for null byte
-        i += keysz + valsz;
-        if data[i] != 0 {
-            return true;
-        }
-        i += 1;
-
-        // Align to 32 bits
-        i = (i + 3) & !3;
     }
 
     false
@@ -112,37 +154,14 @@ pub fn is_corrupted(data: &[u8]) -> bool {
 /// Determine size in bytes of used data in raw SMMSTORE region.
 /// If an entry is corrupted, reports the size up to, but not including, that entry.
 pub fn used_size(data: &[u8]) -> usize {
+    let smmstore = Smmstore::from_raw(&data);
+
     let mut used = 0;
-    let mut i = 0;
-    while i + 8 <= data.len() {
-        let (keysz, valsz) = unsafe {
-            let ptr = data.as_ptr().add(i) as *const u32;
-            i += 8;
-            (*ptr as usize, *ptr.add(1) as usize)
-        };
-
-        // No more entries
-        if keysz == 0 || keysz == 0xffff_ffff {
-            break;
+    for entry in smmstore {
+        if let Ok(entry) = entry {
+            // Key size + value size + key + value + NULL byte + alignment
+            used += (8 + entry.key.len() + entry.value.len() + 1 + 3) & !3;
         }
-
-        // Data too short
-        if i + keysz + valsz >= data.len() {
-            break;
-        }
-
-        // Check for null byte
-        i += keysz + valsz;
-        if data[i] != 0 {
-            break;
-        }
-        i += 1;
-
-        // Align to 32 bits
-        i = (i + 3) & !3;
-
-        // Update used count
-        used = i;
     }
 
     used
@@ -151,51 +170,16 @@ pub fn used_size(data: &[u8]) -> usize {
 /// Count the number of duplicate entries in a raw region.
 /// Stops if a corrupted entry is encountered.
 pub fn count_duplicates(data: &[u8]) -> usize {
-    let mut kv = BTreeMap::<&[u8], &[u8]>::new();
-
-    let mut i = 0;
+    let mut kv = BTreeMap::<Vec<u8>, Vec<u8>>::new();
     let mut duplicates = 0;
-    while i + 8 <= data.len() {
-        let (keysz, valsz) = unsafe {
-            let ptr = data.as_ptr().add(i) as *const u32;
-            i += 8;
-            (*ptr as usize, *ptr.add(1) as usize)
-        };
 
-        // No more entries
-        if keysz == 0 || keysz == 0xffff_ffff {
-            break;
-        }
-
-        // Data too short
-        if i + keysz + valsz >= data.len() {
-            break;
-        }
-
-        unsafe {
-            let ptr = data.as_ptr().add(i);
-            let key = slice::from_raw_parts(
-                ptr,
-                keysz
-            );
-            let value = slice::from_raw_parts(
-                ptr.add(keysz),
-                valsz
-            );
-            if kv.insert(key, value).is_some() {
+    let smmstore = Smmstore::from_raw(&data);
+    for entry in smmstore {
+        if let Ok(entry) = entry {
+            if kv.insert(entry.key, entry.value).is_some() {
                 duplicates += 1;
             }
         }
-
-        // Check for null byte
-        i += keysz + valsz;
-        if data[i] != 0 {
-            break;
-        }
-        i += 1;
-
-        // Align to 32 bits
-        i = (i + 3) & !3;
     }
 
     duplicates
@@ -203,56 +187,21 @@ pub fn count_duplicates(data: &[u8]) -> usize {
 
 /// Convert raw region data into a BTreeMap.
 /// Stops if a corrupted entry is encountered.
-pub fn deserialize(data: &[u8]) -> BTreeMap::<&[u8], &[u8]> {
-    let mut kv = BTreeMap::<&[u8], &[u8]>::new();
+pub fn deserialize(data: &[u8]) -> BTreeMap::<Vec<u8>, Vec<u8>> {
+    let mut kv = BTreeMap::<Vec<u8>, Vec<u8>>::new();
 
-    let mut i = 0;
-    while i + 8 <= data.len() {
-        let (keysz, valsz) = unsafe {
-            let ptr = data.as_ptr().add(i) as *const u32;
-            i += 8;
-            (*ptr as usize, *ptr.add(1) as usize)
-        };
-
-        // No more entries
-        if keysz == 0 || keysz == 0xffff_ffff {
-            break;
+    let smmstore = Smmstore::from_raw(&data);
+    for entry in smmstore {
+        if let Ok(entry) = entry {
+            kv.insert(entry.key, entry.value);
         }
-
-        // Data too short
-        if i + keysz + valsz >= data.len() {
-            break;
-        }
-
-        unsafe {
-            let ptr = data.as_ptr().add(i);
-            let key = slice::from_raw_parts(
-                ptr,
-                keysz
-            );
-            let value = slice::from_raw_parts(
-                ptr.add(keysz),
-                valsz
-            );
-            kv.insert(key, value);
-        }
-
-        // Check for null byte
-        i += keysz + valsz;
-        if data[i] != 0 {
-            break;
-        }
-        i += 1;
-
-        // Align to 32 bits
-        i = (i + 3) & !3;
     }
 
     kv
 }
 
 /// Convert a BTreeMap into raw used data.
-pub fn serialize(data: BTreeMap::<&[u8], &[u8]>) -> Vec<u8> {
+pub fn serialize(data: BTreeMap::<Vec<u8>, Vec<u8>>) -> Vec<u8> {
     let mut raw = Vec::new();
 
     // Fill in region with new data

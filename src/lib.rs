@@ -14,6 +14,7 @@ use core::mem;
 use uefi::guid::Guid;
 use uefi::status::{Error, Result};
 
+/// Trigger an SMI by writing to APM_CNT.
 unsafe fn smm_cmd(cmd: u8, subcmd: u8, arg: u32) -> u32 {
     let res;
     llvm_asm!(
@@ -41,10 +42,12 @@ const SMMSTORE_CLEAR: u8 = 1;
 const SMMSTORE_READ: u8 = 2;
 const SMMSTORE_APPEND: u8 = 3;
 
+/// Clear the entire SMMSTORE region.
 pub unsafe fn smmstore_clear() -> Result<()> {
     smmstore_cmd(SMMSTORE_CLEAR, 0)
 }
 
+/// Read the SMMSTORE region.
 pub unsafe fn smmstore_read(buf: &mut [u8]) -> Result<()> {
     #[repr(C)]
     struct Params {
@@ -58,6 +61,7 @@ pub unsafe fn smmstore_read(buf: &mut [u8]) -> Result<()> {
     smmstore_cmd(SMMSTORE_READ, &params as *const Params as u32)
 }
 
+/// Append an entry to the SMMSTORE data.
 pub unsafe fn smmstore_append(key: &[u8], val: &[u8]) -> Result<()> {
     #[repr(C)]
     struct Params {
@@ -75,7 +79,7 @@ pub unsafe fn smmstore_append(key: &[u8], val: &[u8]) -> Result<()> {
     smmstore_cmd(SMMSTORE_APPEND, &params as *const Params as u32)
 }
 
-
+/// Simple key-value pair representing an SMMSTORE entry.
 struct Entry {
     key: Vec<u8>,
     value: Vec<u8>,
@@ -139,7 +143,7 @@ impl Iterator for Smmstore {
 }
 
 
-/// Check if raw region data is corrupted.
+/// Check if SMMSTORE data is corrupted.
 pub fn is_corrupted(data: &[u8]) -> bool {
     let smmstore = Smmstore::from_raw(&data);
     for entry in smmstore {
@@ -151,8 +155,10 @@ pub fn is_corrupted(data: &[u8]) -> bool {
     false
 }
 
-/// Determine size in bytes of used data in raw SMMSTORE region.
-/// If an entry is corrupted, reports the size up to, but not including, that entry.
+/// Determine size in bytes of used data in the SMMSTORE data.
+///
+/// No error is returned if a corrupted entry is encountered. Instead, the used
+/// size up to the corrupted entry is returned.
 pub fn used_size(data: &[u8]) -> usize {
     let smmstore = Smmstore::from_raw(&data);
 
@@ -168,7 +174,9 @@ pub fn used_size(data: &[u8]) -> usize {
 }
 
 /// Count the number of duplicate entries in a raw region.
-/// Stops if a corrupted entry is encountered.
+///
+/// No error is returned if a corrupted entry is encountered. Instead, the
+/// number of duplicates up to that point is returned.
 pub fn count_duplicates(data: &[u8]) -> usize {
     let mut kv = BTreeMap::<Vec<u8>, Vec<u8>>::new();
     let mut duplicates = 0;
@@ -186,7 +194,9 @@ pub fn count_duplicates(data: &[u8]) -> usize {
 }
 
 /// Convert raw region data into a BTreeMap.
-/// Stops if a corrupted entry is encountered.
+///
+/// No error is returned if a corrupted entry is encountered. Instead, a
+/// BTreeMap of all values up to that point is returned.
 pub fn deserialize(data: &[u8]) -> BTreeMap::<Vec<u8>, Vec<u8>> {
     let mut kv = BTreeMap::<Vec<u8>, Vec<u8>>::new();
 

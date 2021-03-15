@@ -31,6 +31,7 @@ unsafe fn smmstore_cmd(subcmd: u8, arg: u32) -> Result<()> {
     }
 }
 
+// Version 1
 const SMMSTORE_CLEAR: u8 = 1;
 const SMMSTORE_READ: u8 = 2;
 const SMMSTORE_APPEND: u8 = 3;
@@ -67,4 +68,66 @@ pub unsafe fn smmstore_append(key: &[u8], val: &[u8]) -> Result<()> {
         valsize: val.len() as u32
     };
     smmstore_cmd(SMMSTORE_APPEND, &params as *const Params as u32)
+}
+
+// Version 2
+const SMMSTORE_CMD_INIT: u8 = 4;
+const SMMSTORE_CMD_RAW_READ: u8 = 5;
+const SMMSTORE_CMD_RAW_WRITE: u8 = 6;
+const SMMSTORE_CMD_RAW_CLEAR: u8 = 7;
+
+pub const SMM_BLOCK_SIZE: u32 = 64 * 1024;
+
+pub unsafe fn smmstore_init(buf: &mut [u8]) -> Result<()> {
+    #[repr(C)]
+    struct Params {
+        com_buffer: u32,
+        com_buffer_size: u32,
+    }
+    let params = Params {
+        com_buffer: buf.as_mut_ptr() as u32,
+        com_buffer_size: buf.len() as u32,
+    };
+    smmstore_cmd(SMMSTORE_CMD_INIT, &params as *const Params as u32)
+}
+
+pub unsafe fn smmstore_rawread_region(block_id: u32, offset: u32, bufsize: u32) -> Result<()> {
+    #[repr(C)]
+    struct Params {
+        bufsize: u32,
+        bufoffset: u32,
+        block_id: u32,
+    }
+    let params = Params {
+        bufsize,
+        bufoffset: offset,
+        block_id,
+    };
+    smmstore_cmd(SMMSTORE_CMD_RAW_READ, &params as *const Params as u32)
+}
+
+pub unsafe fn smmstore_rawwrite_region(block_id: u32, offset: u32, bufsize: u32) -> Result<()> {
+    #[repr(C)]
+    struct Params {
+        bufsize: u32,
+        bufoffset: u32,
+        block_id: u32,
+    }
+    let params = Params {
+        bufsize,
+        bufoffset: offset,
+        block_id,
+    };
+    smmstore_cmd(SMMSTORE_CMD_RAW_WRITE, &params as *const Params as u32)
+}
+
+pub unsafe fn smmstore_rawclear_region(block_id: u32) -> Result<()> {
+    #[repr(C)]
+    struct Params {
+        block_id: u32,
+    }
+    let params = Params {
+        block_id,
+    };
+    smmstore_cmd(SMMSTORE_CMD_RAW_CLEAR, &params as *const Params as u32)
 }

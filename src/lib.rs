@@ -2,6 +2,7 @@
 
 #![no_std]
 #![feature(llvm_asm)]
+#![allow(clippy::missing_safety_doc)]
 
 extern crate rlibc;
 

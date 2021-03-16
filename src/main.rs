@@ -71,7 +71,7 @@ fn smmstore() -> Result<()> {
         res?;
 
         for (key, value) in compact.iter() {
-            if key.len() > mem::size_of::<Guid>() && value.len() > 0 {
+            if key.len() > mem::size_of::<Guid>() && !value.is_empty() {
                 let res = unsafe { smmstore::smmstore_append(&key, &value) };
                 // println!("Append {:?}", res);
                 res?;

@@ -6,6 +6,9 @@
 
 extern crate rlibc;
 
+pub mod volume;
+pub mod variable;
+
 use uefi::status::{Error, Result};
 
 unsafe fn smm_cmd(cmd: u8, subcmd: u8, arg: u32) -> u32 {

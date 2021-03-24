@@ -8,9 +8,10 @@ license = "GPL-3.0-only"
 lto = true
 
 [dependencies]
-redox_uefi = "0.1.1"
+redox_uefi = { git = "https://gitlab.redox-os.org/tcrawford/uefi.git", branch = "fvb" }
 redox_uefi_std = { version = "0.1.4", optional = true }
 rlibc = "1.0"
+plain = "0.2"
 
 [features]
 default = ["redox_uefi_std"]

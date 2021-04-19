@@ -44,6 +44,7 @@ $(BUILD)/boot.efi: Cargo.lock Cargo.toml res/* src/*
 	mkdir -p $(BUILD)
 	cargo rustc \
 		-Z build-std=core,alloc \
+		-Z build-std-features=compiler-builtins-mem \
 		--bin system76_firmware_smmstore \
 		--target $(TARGET) \
 		--release \

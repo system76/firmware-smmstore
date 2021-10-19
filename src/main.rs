@@ -2,14 +2,14 @@
 
 #![no_std]
 #![no_main]
-#![feature(try_trait)]
+#![feature(try_trait_v2)]
 
 extern crate alloc;
 extern crate system76_firmware_smmstore as smmstore;
 extern crate uefi_std as std;
 
-use core::ops::Try;
-use std::mem;
+use core::ops::FromResidual;
+use core::mem;
 use uefi::guid::Guid;
 use uefi::status::{Result, Status};
 
@@ -42,7 +42,7 @@ fn smmstore() -> Result<()> {
 #[no_mangle]
 pub extern "C" fn main() -> Status {
     if let Err(err) = smmstore() {
-        Status::from_error(err)
+        Status::from_residual(err)
     } else {
         Status(0)
     }

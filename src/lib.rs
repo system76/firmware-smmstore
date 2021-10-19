@@ -3,6 +3,7 @@
 #![no_std]
 #![feature(llvm_asm)]
 #![allow(clippy::missing_safety_doc)]
+#![allow(clippy::manual_flatten)]
 
 #[macro_use]
 extern crate alloc;
@@ -144,7 +145,7 @@ impl Iterator for Smmstore {
 
 /// Check if SMMSTORE data is corrupted.
 pub fn is_corrupted(data: &[u8]) -> bool {
-    let smmstore = Smmstore::from_raw(&data);
+    let smmstore = Smmstore::from_raw(data);
     for entry in smmstore {
         if let Err(_err) = entry {
             return true;
@@ -159,7 +160,7 @@ pub fn is_corrupted(data: &[u8]) -> bool {
 /// No error is returned if a corrupted entry is encountered. Instead, the used
 /// size up to the corrupted entry is returned.
 pub fn used_size(data: &[u8]) -> usize {
-    let smmstore = Smmstore::from_raw(&data);
+    let smmstore = Smmstore::from_raw(data);
 
     let mut used = 0;
     for entry in smmstore {
@@ -180,7 +181,7 @@ pub fn count_duplicates(data: &[u8]) -> usize {
     let mut kv = BTreeMap::<Vec<u8>, Vec<u8>>::new();
     let mut duplicates = 0;
 
-    let smmstore = Smmstore::from_raw(&data);
+    let smmstore = Smmstore::from_raw(data);
     for entry in smmstore {
         if let Ok(entry) = entry {
             if kv.insert(entry.key, entry.value).is_some() {
@@ -199,7 +200,7 @@ pub fn count_duplicates(data: &[u8]) -> usize {
 pub fn deserialize(data: &[u8]) -> BTreeMap::<Vec<u8>, Vec<u8>> {
     let mut kv = BTreeMap::<Vec<u8>, Vec<u8>>::new();
 
-    let smmstore = Smmstore::from_raw(&data);
+    let smmstore = Smmstore::from_raw(data);
     for entry in smmstore {
         if let Ok(entry) = entry {
             kv.insert(entry.key, entry.value);
@@ -232,11 +233,11 @@ pub fn serialize(data: BTreeMap::<Vec<u8>, Vec<u8>>) -> Vec<u8> {
             }
 
             // Key
-            raw.extend_from_slice(&key);
+            raw.extend_from_slice(key);
             offset += key.len();
 
             // Value
-            raw.extend_from_slice(&value);
+            raw.extend_from_slice(value);
             offset += value.len();
 
             // NULL byte
@@ -256,9 +257,9 @@ pub fn serialize(data: BTreeMap::<Vec<u8>, Vec<u8>>) -> Vec<u8> {
 
 /// Convenience function to create new region of same size with compacted data.
 pub fn compact(data: &[u8]) -> Vec<u8> {
-    let compact = serialize(deserialize(&data));
+    let compact = serialize(deserialize(data));
     let mut new_data = vec![0xFF; data.len()];
-    new_data[..compact.len()].copy_from_slice(&compact.as_slice());
+    new_data[..compact.len()].copy_from_slice(compact.as_slice());
     new_data
 }
 
@@ -286,8 +287,8 @@ mod tests {
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         ];
 
-        assert_eq!(is_corrupted(&data), false);
-        assert_eq!(used_size(&data), 40);
+        assert!(!is_corrupted(data));
+        assert_eq!(used_size(data), 40);
     }
 
     #[test]
@@ -310,8 +311,8 @@ mod tests {
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         ];
 
-        assert_eq!(is_corrupted(&data), false);
-        assert_eq!(used_size(&data), 36);
+        assert!(!is_corrupted(data));
+        assert_eq!(used_size(data), 36);
     }
 
     #[test]
@@ -336,8 +337,8 @@ mod tests {
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         ];
 
-        assert_eq!(is_corrupted(&data), true);
-        assert_eq!(used_size(&data), 0);
+        assert!(is_corrupted(data));
+        assert_eq!(used_size(data), 0);
     }
 
     #[test]
@@ -365,7 +366,7 @@ mod tests {
             0x00, 0xFF, 0xFF, 0xFF,
         ];
 
-        assert_eq!(count_duplicates(&data), 1);
+        assert_eq!(count_duplicates(data), 1);
     }
 
 
@@ -389,7 +390,7 @@ mod tests {
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         ];
 
-        assert_eq!(compact(&data), data);
+        assert_eq!(compact(data), data);
     }
 
     #[test]
@@ -417,7 +418,7 @@ mod tests {
             0x00, 0xFF, 0xFF, 0xFF,
         ];
 
-        let compacted = compact(&data);
+        let compacted = compact(data);
         assert_ne!(compacted, data);
         assert_eq!(count_duplicates(&compacted), 0);
     }

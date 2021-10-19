@@ -6,7 +6,6 @@
 
 #[macro_use]
 extern crate alloc;
-extern crate rlibc;
 
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;

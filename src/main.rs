@@ -30,7 +30,7 @@ fn smmstore() -> Result<()> {
         let compact = smmstore::deserialize(&data);
         for (key, value) in compact.iter() {
             if key.len() > mem::size_of::<Guid>() && !value.is_empty() {
-                let res = unsafe { smmstore::smmstore_append(&key, &value) };
+                let res = unsafe { smmstore::smmstore_append(key, value) };
                 res?;
             }
         }

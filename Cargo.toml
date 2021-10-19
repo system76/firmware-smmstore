@@ -15,7 +15,6 @@ bench = false
 [dependencies]
 redox_uefi = "0.1.2"
 redox_uefi_std = { version = "0.1.5", optional = true }
-rlibc = "1.0"
 
 [features]
 default = ["redox_uefi_std"]

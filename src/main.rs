@@ -15,23 +15,20 @@ use uefi::status::{Result, Status};
 
 fn smmstore() -> Result<()> {
     let mut data = [0; 0x40000];
-    let res = unsafe { smmstore::smmstore_read(&mut data) };
-    res?;
+    unsafe { smmstore::v1::smmstore_read(&mut data)? };
 
     let rewrite = {
-        smmstore::used_size(&data) >= data.len() / 2 ||
-        smmstore::count_duplicates(&data) >= 16
+        smmstore::v1::used_size(&data) >= data.len() / 2 ||
+        smmstore::v1::count_duplicates(&data) >= 16
     };
 
     if rewrite {
-        let res = unsafe { smmstore::smmstore_clear() };
-        res?;
+        unsafe { smmstore::v1::smmstore_clear()? };
 
-        let compact = smmstore::deserialize(&data);
+        let compact = smmstore::v1::deserialize(&data);
         for (key, value) in compact.iter() {
             if key.len() > mem::size_of::<Guid>() && !value.is_empty() {
-                let res = unsafe { smmstore::smmstore_append(key, value) };
-                res?;
+                unsafe { smmstore::v1::smmstore_append(key, value)? };
             }
         }
     }

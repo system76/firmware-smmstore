@@ -17,7 +17,7 @@ fn main() {
     let data = fs::read(path)
         .expect("failed to read file");
 
-    let compact = smmstore::deserialize(&data);
+    let compact = smmstore::v1::deserialize(&data);
 
     for (key, value) in compact.iter() {
         if key.len() > mem::size_of::<Guid>() && !value.is_empty() {
@@ -60,11 +60,11 @@ fn main() {
 
     println!();
 
-    let used = smmstore::used_size(&data);
+    let used = smmstore::v1::used_size(&data);
     let percent = (used * 100) / data.len();
     println!("\x1B[1mSMMSTORE used space:\x1B[0m {} / {} bytes ({}%)", used, data.len(), percent);
 
-    if smmstore::is_corrupted(&data) {
+    if smmstore::v1::is_corrupted(&data) {
         println!("\x1B[1m\x1B[91mSMMSTORE region is corrupted\x1B[39m\x1B[0m");
     }
 }

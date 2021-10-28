@@ -11,12 +11,15 @@ extern crate alloc;
 use uefi::status::{Error, Result};
 
 pub mod v1;
+pub mod v2;
 
-const CMD_SMMSTORE: u8 = 0xED;
+const APM_CMD_SMMSTORE: u8 = 0xED;
 
 /// Trigger an SMI by writing to APM_CNT.
 unsafe fn smm_cmd(cmd: u8, subcmd: u8, arg: u32) -> u32 {
     let res;
+
+    // XXX: New asm macro does not allow the use of EBX because LLVM uses it internally.
     llvm_asm!(
         "out 0xB2, $0"
         : "={eax}"(res)
@@ -28,7 +31,7 @@ unsafe fn smm_cmd(cmd: u8, subcmd: u8, arg: u32) -> u32 {
 }
 
 unsafe fn smmstore_cmd(subcmd: u8, arg: u32) -> Result<()> {
-    match smm_cmd(CMD_SMMSTORE, subcmd, arg) {
+    match smm_cmd(APM_CMD_SMMSTORE, subcmd, arg) {
         0 => Ok(()),
         1 => Err(Error::DeviceError),
         2 => Err(Error::Unsupported),

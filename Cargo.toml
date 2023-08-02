@@ -1,7 +1,7 @@
 [package]
 name = "system76_firmware_smmstore"
 version = "1.0.0"
-edition = "2018"
+edition = "2021"
 license = "GPL-3.0-only"
 
 [profile.release]
@@ -13,8 +13,8 @@ test = false
 bench = false
 
 [dependencies]
-redox_uefi = "0.1.2"
-redox_uefi_std = { version = "0.1.5", optional = true }
+redox_uefi = "0.1.10"
+redox_uefi_std = { version = "=0.1.9", optional = true }
 
 [features]
 default = ["redox_uefi_std"]

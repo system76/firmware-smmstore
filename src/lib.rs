@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 #![no_std]
-#![feature(llvm_asm)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::manual_flatten)]
+#![feature(llvm_asm)]
 
-#[macro_use]
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 use core::mem;
 use uefi::guid::Guid;
 use uefi::status::{Error, Result};
@@ -17,6 +16,7 @@ use uefi::status::{Error, Result};
 /// Trigger an SMI by writing to APM_CNT.
 unsafe fn smm_cmd(cmd: u8, subcmd: u8, arg: u32) -> u32 {
     let res;
+    // XXX: Cannot use `asm!()` due to use of `ebx`.
     llvm_asm!(
         "out 0xB2, $0"
         : "={eax}"(res)

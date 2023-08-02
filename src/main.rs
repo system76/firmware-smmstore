@@ -10,8 +10,8 @@ extern crate uefi_std as std;
 
 use core::ops::FromResidual;
 use core::mem;
-use uefi::guid::Guid;
-use uefi::status::{Result, Status};
+use std::uefi::guid::Guid;
+use std::uefi::status::{Result, Status};
 
 fn smmstore() -> Result<()> {
     let mut data = [0; 0x40000];

@@ -1,3 +1,4 @@
 [toolchain]
-channel = "nightly-2021-06-15"
+# 2022-01-17 is the last version with `llvm_asm!()`
+channel = "nightly-2022-01-17"
 components = ["rust-src", "clippy"]
